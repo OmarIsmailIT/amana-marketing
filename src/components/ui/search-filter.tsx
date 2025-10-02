@@ -43,6 +43,7 @@ export function SearchFilter({
           <button
             onClick={handleClear}
             className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-white text-gray-400 transition-colors"
+            title="Clear search"
           >
             <X className="h-4 w-4" />
           </button>
@@ -51,4 +52,3 @@ export function SearchFilter({
     </div>
   );
 }
-
