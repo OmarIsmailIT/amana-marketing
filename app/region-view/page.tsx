@@ -4,8 +4,13 @@ import { fetchMarketingData } from "../../src/lib/api";
 import { MarketingData } from "../../src/types/marketing";
 import { Navbar } from "../../src/components/ui/navbar";
 import { Footer } from "../../src/components/ui/footer";
-import { RegionMap } from "../../src/components/ui/region-map";
+const RegionMap = dynamic(
+  () => import("../../src/components/ui/region-map").then(mod => mod.RegionMap),
+  { ssr: false }
+);
+
 import { cityCoordinates } from "../../src/components/ui/city-coordinates";
+import dynamic from "next/dynamic";
 
 export default function RegionView() {
   const [marketingData, setMarketingData] = useState<MarketingData | null>(null);
