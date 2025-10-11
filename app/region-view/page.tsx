@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useMemo } from 'react';
-import { fetchMarketingData } from '../../src/lib/api';
-import { MarketingData } from '../../src/types/marketing';
-import { Navbar } from '../../src/components/ui/navbar';
-import { Footer } from '../../src/components/ui/footer';
-import { BubbleMap } from '../../src/components/ui/bubble-map';
+import { useState, useEffect, useMemo } from "react";
+import { fetchMarketingData } from "../../src/lib/api";
+import { MarketingData } from "../../src/types/marketing";
+import { Navbar } from "../../src/components/ui/navbar";
+import { Footer } from "../../src/components/ui/footer";
+import { RegionMap } from "../../src/components/ui/region-map";
+import { cityCoordinates } from "../../src/components/ui/city-coordinates";
 
 export default function RegionView() {
   const [marketingData, setMarketingData] = useState<MarketingData | null>(null);
@@ -17,7 +18,7 @@ export default function RegionView() {
         const data = await fetchMarketingData();
         setMarketingData(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
+        setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -30,8 +31,8 @@ export default function RegionView() {
 
     const regionalAggregated: { [region: string]: { revenue: number; spend: number } } = {};
 
-    marketingData.campaigns.forEach(campaign => {
-      campaign.regional_performance.forEach(regionData => {
+    marketingData.campaigns.forEach((campaign) => {
+      campaign.regional_performance.forEach((regionData) => {
         if (!regionalAggregated[regionData.region]) {
           regionalAggregated[regionData.region] = { revenue: 0, spend: 0 };
         }
@@ -40,15 +41,23 @@ export default function RegionView() {
       });
     });
 
-    const revenueByRegion = Object.entries(regionalAggregated).map(([region, data]) => ({
-      region,
-      value: data.revenue
-    }));
-    
-    const spendByRegion = Object.entries(regionalAggregated).map(([region, data]) => ({
-      region,
-      value: data.spend
-    }));
+    const revenueByRegion = Object.entries(regionalAggregated)
+      .filter(([region]) => cityCoordinates[region])
+      .map(([region, data]) => ({
+        region,
+        value: data.revenue,
+        lat: cityCoordinates[region].lat,
+        lng: cityCoordinates[region].lng,
+      }));
+
+    const spendByRegion = Object.entries(regionalAggregated)
+      .filter(([region]) => cityCoordinates[region])
+      .map(([region, data]) => ({
+        region,
+        value: data.spend,
+        lat: cityCoordinates[region].lat,
+        lng: cityCoordinates[region].lng,
+      }));
 
     return { revenueByRegion, spendByRegion };
   }, [marketingData]);
@@ -63,26 +72,24 @@ export default function RegionView() {
   }
 
   if (error) {
-      return (
-          <div className="flex h-screen bg-gray-900">
-              <Navbar />
-              <div className="flex-1 flex flex-col">
-                  <section className="bg-gradient-to-r from-gray-800 to-gray-700 text-white py-12">
-                      <div className="px-6 lg:px-8 text-center">
-                          <h1 className="text-3xl md:text-5xl font-bold">Region View</h1>
-                      </div>
-                  </section>
-                  <div className="flex-1 flex items-center justify-center text-red-400">{error}</div>
-              </div>
-          </div>
-      );
+    return (
+      <div className="flex h-screen bg-gray-900">
+        <Navbar />
+        <div className="flex-1 flex flex-col">
+          <section className="bg-gradient-to-r from-gray-800 to-gray-700 text-white py-12">
+            <div className="px-6 lg:px-8 text-center">
+              <h1 className="text-3xl md:text-5xl font-bold">Region View</h1>
+            </div>
+          </section>
+          <div className="flex-1 flex items-center justify-center text-red-400">{error}</div>
+        </div>
+      </div>
+    );
   }
-
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-900">
       <Navbar />
-      
       <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out">
         <section className="bg-gradient-to-r from-gray-800 to-gray-700 text-white py-12">
           <div className="px-6 lg:px-8 text-center">
@@ -91,26 +98,30 @@ export default function RegionView() {
         </section>
 
         <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
-           {regionalStats && (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <BubbleMap
-                        title="Revenue by Region"
-                        data={regionalStats.revenueByRegion}
-                        formatValue={(value) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                        highColor="#10B981"
-                        lowColor="#F59E0B"
-                    />
-                     <BubbleMap
-                        title="Spend by Region"
-                        data={regionalStats.spendByRegion}
-                        formatValue={(value) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                        highColor="#3B82F6"
-                        lowColor="#EC4899"
-                    />
-                </div>
-            )}
+          {regionalStats && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <RegionMap
+                title="Revenue by Region"
+                data={regionalStats.revenueByRegion}
+                formatValue={(value) =>
+                  `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                }
+                highColor="#10B981"
+                lowColor="#F59E0B"
+              />
+              <RegionMap
+                title="Spend by Region"
+                data={regionalStats.spendByRegion}
+                formatValue={(value) =>
+                  `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                }
+                highColor="#3B82F6"
+                lowColor="#EC4899"
+              />
+            </div>
+          )}
         </div>
-        
+
         <Footer />
       </div>
     </div>
